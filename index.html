@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Theme Tracker — Market Intelligence Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #0f1217;
+    --surface2: #141820;
+    --border: #1e2530;
+    --border2: #252d3a;
+    --text: #c8d4e0;
+    --muted: #4a5568;
+    --accent: #7c3aed;
+    --accent2: #a855f7;
+    --green: #10b981;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --blue: #3b82f6;
+    --cyan: #06b6d4;
+
+    --ai-infra: #7c3aed;
+    --ai-mem: #2563eb;
+    --defense: #dc2626;
+    --social: #d97706;
+    --space: #059669;
+    --notable: #db2777;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* SCANLINE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* HEADER */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .logo {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.2em;
+    color: #fff;
+    text-transform: uppercase;
+  }
+
+  .logo span {
+    color: var(--accent2);
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  #clock { color: var(--text); font-weight: 500; }
+
+  /* MARKET SUMMARY BAR */
+  .market-bar {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 24px;
+    display: flex;
+    gap: 24px;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .market-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+  }
+
+  .market-label { color: var(--muted); }
+  .market-val { color: var(--text); font-weight: 500; }
+  .up { color: var(--green); }
+  .down { color: var(--red); }
+
+  /* MAIN LAYOUT */
+  .container {
+    padding: 20px 24px;
+    max-width: 1800px;
+    margin: 0 auto;
+  }
+
+  /* INSIGHTS BANNER */
+  .insights-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .insight-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 16px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .insight-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    border-radius: 2px 0 0 2px;
+  }
+
+  .insight-card:hover { border-color: var(--border2); }
+
+  .insight-card.ai-infra::before { background: var(--ai-infra); }
+  .insight-card.ai-mem::before { background: var(--ai-mem); }
+  .insight-card.defense::before { background: var(--defense); }
+  .insight-card.social::before { background: var(--notable); }
+  .insight-card.space::before { background: var(--space); }
+
+  .insight-theme {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .insight-title {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 6px;
+    line-height: 1.3;
+  }
+
+  .insight-body {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.5;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 300;
+  }
+
+  /* THEME SECTIONS */
+  .themes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    gap: 16px;
+  }
+
+  .theme-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .theme-header {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .theme-header::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.05;
+  }
+
+  .theme-block.ai-infra .theme-header { border-top: 2px solid var(--ai-infra); }
+  .theme-block.ai-mem .theme-header { border-top: 2px solid var(--ai-mem); }
+  .theme-block.defense .theme-header { border-top: 2px solid var(--defense); }
+  .theme-block.social .theme-header { border-top: 2px solid var(--notable); }
+  .theme-block.space .theme-header { border-top: 2px solid var(--space); }
+
+  .theme-title {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .theme-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 400;
+  }
+
+  .ai-infra .theme-badge { background: rgba(124,58,237,0.2); color: var(--accent2); }
+  .ai-mem .theme-badge { background: rgba(37,99,235,0.2); color: #60a5fa; }
+  .defense .theme-badge { background: rgba(220,38,38,0.2); color: #f87171; }
+  .social .theme-badge { background: rgba(219,39,119,0.2); color: #f472b6; }
+  .space .theme-badge { background: rgba(5,150,105,0.2); color: #34d399; }
+
+  .theme-stats {
+    display: flex;
+    gap: 16px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .theme-stats .stat-val { color: var(--text); }
+
+  /* TICKER TABLE */
+  .ticker-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .ticker-table th {
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    font-weight: 400;
+    background: var(--surface2);
+  }
+
+  .ticker-table th:not(:first-child) { text-align: right; }
+
+  .ticker-table td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  .ticker-table tr:last-child td { border-bottom: none; }
+
+  .ticker-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .ticker-sym {
+    font-weight: 600;
+    font-size: 12px;
+    color: #fff;
+    letter-spacing: 0.05em;
+  }
+
+  .ticker-name {
+    font-size: 10px;
+    color: var(--muted);
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+
+  .price-cell {
+    text-align: right;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .change-cell {
+    text-align: right;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .vol-cell {
+    text-align: right;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .spark-cell {
+    text-align: right;
+    width: 80px;
+  }
+
+  .sparkline {
+    display: inline-block;
+    width: 72px;
+    height: 24px;
+    vertical-align: middle;
+  }
+
+  /* SIGNAL badges */
+  .signal {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+
+  .signal-hot { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+  .signal-up { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.2); }
+  .signal-watch { background: rgba(245,158,11,0.15); color: var(--yellow); border: 1px solid rgba(245,158,11,0.2); }
+  .signal-neutral { background: rgba(100,116,139,0.15); color: #64748b; border: 1px solid rgba(100,116,139,0.2); }
+
+  /* LOADING STATE */
+  .loading-shimmer {
+    background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 2px;
+    display: inline-block;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* FOOTER */
+  footer {
+    padding: 20px 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--muted);
+    font-size: 10px;
+    margin-top: 24px;
+  }
+
+  /* FILTER BAR */
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .filter-label {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .filter-btn {
+    padding: 4px 10px;
+    border-radius: 2px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+  }
+
+  .filter-btn:hover, .filter-btn.active {
+    border-color: var(--accent2);
+    color: var(--accent2);
+    background: rgba(168,85,247,0.1);
+  }
+
+  .sort-select {
+    padding: 4px 10px;
+    border-radius: 2px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    cursor: pointer;
+    margin-left: auto;
+  }
+
+  /* ERROR / RETRY */
+  .error-msg {
+    color: var(--red);
+    font-size: 10px;
+    padding: 4px 0;
+  }
+
+  .retry-btn {
+    background: none;
+    border: none;
+    color: var(--accent2);
+    cursor: pointer;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    text-decoration: underline;
+    padding: 0 4px;
+  }
+
+  .last-updated {
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  /* MODAL for ticker detail */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 24px;
+    width: 480px;
+    max-width: 95vw;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .modal-close:hover { color: var(--text); }
+
+  .modal-ticker { font-size: 22px; font-weight: 600; color: #fff; }
+  .modal-name { font-size: 12px; color: var(--muted); margin-top: 2px; font-family: 'IBM Plex Sans', sans-serif; }
+  .modal-price { font-size: 28px; font-weight: 300; color: #fff; margin: 12px 0 4px; }
+  .modal-change { font-size: 14px; }
+  .modal-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  .modal-stat { background: var(--surface2); padding: 10px 12px; border-radius: 3px; }
+  .modal-stat-label { font-size: 10px; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .modal-stat-val { font-size: 14px; color: var(--text); font-weight: 500; }
+
+  .insight-loading {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'IBM Plex Sans', sans-serif;
+    margin-top: 12px;
+    min-height: 60px;
+    line-height: 1.6;
+  }
+
+  .ai-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 9px;
+    color: var(--accent2);
+    margin-bottom: 6px;
+    letter-spacing: 0.08em;
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  @media (max-width: 700px) {
+    .themes-grid { grid-template-columns: 1fr; }
+    .insights-grid { grid-template-columns: 1fr; }
+    .ticker-table th:nth-child(4),
+    .ticker-table td:nth-child(4),
+    .ticker-table th:nth-child(5),
+    .ticker-table td:nth-child(5) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="status-dot"></div>
+    <div class="logo">THEME<span>TRACK</span></div>
+    <div style="color: var(--muted); font-size: 10px; letter-spacing: 0.05em;">MARKET INTELLIGENCE</div>
+  </div>
+  <div class="header-right">
+    <span>DELAYED 15MIN</span>
+    <span id="clock">--:--:-- ET</span>
+    <span id="last-refresh" class="last-updated">--</span>
+  </div>
+</header>
+
+<div class="market-bar" id="market-bar">
+  <div class="market-item"><span class="market-label">SPY</span>&nbsp;<span class="market-val" id="spy-val">--</span>&nbsp;<span id="spy-chg" class="market-val">--</span></div>
+  <div class="market-item"><span class="market-label">QQQ</span>&nbsp;<span class="market-val" id="qqq-val">--</span>&nbsp;<span id="qqq-chg" class="market-val">--</span></div>
+  <div class="market-item"><span class="market-label">IWM</span>&nbsp;<span class="market-val" id="iwm-val">--</span>&nbsp;<span id="iwm-chg" class="market-val">--</span></div>
+  <div class="market-item"><span class="market-label">VIX</span>&nbsp;<span class="market-val" id="vix-val">--</span>&nbsp;<span id="vix-chg" class="market-val">--</span></div>
+  <div style="color: var(--border2); font-size: 11px; padding: 0 4px;">│</div>
+  <div class="market-item" style="color: var(--muted); font-size: 10px;">Data via Yahoo Finance (delayed 15min). Refresh every 5min.</div>
+</div>
+
+<div class="container">
+
+  <!-- INSIGHTS ROW -->
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 12px;">
+    <div style="font-size:10px; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase;">📡 Theme Insights</div>
+    <button onclick="refreshAll()" style="background:none;border:1px solid var(--border);color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:10px;padding:4px 10px;cursor:pointer;border-radius:2px;" id="refresh-btn">↺ REFRESH</button>
+  </div>
+
+  <div class="insights-grid" id="insights-grid">
+    <!-- populated by JS -->
+  </div>
+
+  <div class="filter-bar">
+    <span class="filter-label">THEME ↓</span>
+    <button class="filter-btn active" onclick="filterTheme('all', this)">ALL</button>
+    <button class="filter-btn" onclick="filterTheme('ai-infra', this)">AI INFRA</button>
+    <button class="filter-btn" onclick="filterTheme('ai-mem', this)">AI MEMORY</button>
+    <button class="filter-btn" onclick="filterTheme('defense', this)">DEFENSE TECH</button>
+    <button class="filter-btn" onclick="filterTheme('social', this)">SOCIAL SENT.</button>
+    <button class="filter-btn" onclick="filterTheme('space', this)">SPACE</button>
+    <select class="sort-select" id="sort-select" onchange="sortTickers(this.value)">
+      <option value="default">SORT: DEFAULT</option>
+      <option value="change-desc">SORT: TOP MOVERS ↑</option>
+      <option value="change-asc">SORT: WORST MOVERS ↓</option>
+      <option value="volume">SORT: VOLUME</option>
+    </select>
+  </div>
+
+  <div class="themes-grid" id="themes-grid">
+    <!-- populated by JS -->
+  </div>
+
+</div>
+
+<footer>
+  <div>THEMETRACK · Built on Yahoo Finance delayed data · Not financial advice</div>
+  <div id="footer-time">--</div>
+</footer>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-ticker" id="m-ticker">--</div>
+        <div class="modal-name" id="m-name">--</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div>
+      <div class="modal-price" id="m-price">--</div>
+      <div class="modal-change" id="m-change">--</div>
+    </div>
+    <div class="modal-stats">
+      <div class="modal-stat"><div class="modal-stat-label">52W HIGH</div><div class="modal-stat-val" id="m-high">--</div></div>
+      <div class="modal-stat"><div class="modal-stat-label">52W LOW</div><div class="modal-stat-val" id="m-low">--</div></div>
+      <div class="modal-stat"><div class="modal-stat-label">VOLUME</div><div class="modal-stat-val" id="m-vol">--</div></div>
+      <div class="modal-stat"><div class="modal-stat-label">MKT CAP</div><div class="modal-stat-val" id="m-cap">--</div></div>
+    </div>
+    <div style="margin-top:16px; border-top:1px solid var(--border); padding-top:12px;">
+      <div class="ai-badge">⬡ AI INSIGHT</div>
+      <div class="insight-loading" id="m-insight">Loading insight...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const THEMES = [
+  {
+    id: 'ai-infra',
+    label: 'AI Infrastructure',
+    icon: '⬡',
+    tickers: ['AMD','AMPX','BABA','BIDU','BITF','CIFR','CLSK','CORZ','CRWV','EOSE','GOOGL','HUT','IREN','LAES','NBIS','NUAI','NVDA','NVTS','PATH','POWL','RR','SERV','SNDK','TE','TSLA','TSM','WDC','ZETA'],
+    insight: "The AI infrastructure buildout continues at a furious pace. NVIDIA remains the dominant GPU supplier, while AMD gains server GPU share. Data center power and cooling plays (POWL, EOSE) are emerging beneficiaries as power constraints bite. Bitcoin miners (BITF, CIFR, CLSK, HUT, IREN, CORZ) are pivoting GPU fleets toward AI workloads, creating an interesting dual-exposure play. Watch TSLA for Dojo supercomputer progress and TSM for leading-edge packaging capacity."
+  },
+  {
+    id: 'ai-mem',
+    label: 'AI Memory Shortage',
+    icon: '◈',
+    tickers: ['AMAT','LRCX','MRAM','MRVL','MU','NTAP','PSTG','RMBS','SIMO','SNDK','STX','WDC'],
+    insight: "HBM (High Bandwidth Memory) is the gating factor for next-gen AI accelerators. MU is a direct play with HBM3E ramping fast. MRVL designs custom AI silicon that relies on memory density. Equipment players AMAT and LRCX benefit from leading-edge DRAM capex cycles. RMBS licenses memory interface IP and collects royalties regardless of who wins the memory share war. PSTG and NTAP ride enterprise AI data infrastructure spending."
+  },
+  {
+    id: 'defense',
+    label: 'Defense Tech',
+    icon: '◉',
+    tickers: ['AMTM','AVAV','BWXT','DPRO','ESLT','KRKNF','KRMN','KTOS','LPTH','MOB','MRCY','ONDS','OSS','PLTR','PRZO','RCAT','TDY','UMAC'],
+    insight: "Rising geopolitical tension and NATO spending commitments are accelerating defense budgets globally. Drone/counter-drone tech (AVAV, RCAT, DPRO, UMAC) is seeing the fastest budget growth. PLTR's AI-driven battlefield analytics are increasingly embedded in DoD programs. KTOS specializes in affordable autonomous systems and is expanding drone strike capability. Small-caps LPTH (laser systems) and ONDS (tactical comms) carry higher risk/reward. Watch BWXT for nuclear-powered platform plays."
+  },
+  {
+    id: 'social',
+    label: 'Notable Social Sentiment',
+    icon: '◎',
+    tickers: ['CRDO','IBRX','IONQ','IONR','LAC','MP','NAK','NET','OPTT','PPTA','RZLT','SKYT','TMDX','UAMY','USAR','UUUU','WWR'],
+    insight: "This basket tracks social-media-driven momentum, often decoupled from fundamentals. IONQ is a genuine quantum computing leader with real institutional interest beneath the retail noise. NET (Cloudflare) is a quality compounder that occasionally spikes on AI tailwind sentiment. Rare earths plays (MP, UUUU, UAMY) benefit from US-China supply-chain tension narrative. TMDX (transplant tech) has strong organic growth. The rest warrant caution — use tight stops and watch volume spikes as entry signals."
+  },
+  {
+    id: 'space',
+    label: 'Space Exploration',
+    icon: '✦',
+    tickers: ['ASTS','BKSY','FLY','GSAT','HEI','IRDM','KTOS','KULR','LUNR','MNTS','PL','RDW','RKLB','SATL','SATS','SIDU','SPIR','UFO','VOYG','VSAT'],
+    insight: "Space is bifurcating into launch infrastructure and data services. RKLB (Rocket Lab) is the clearest pure-play launch compounder after Neutron development progress. ASTS (AST SpaceMobile) is the highest-risk/reward play on satellite-direct-to-device connectivity. GSAT is a potential strategic asset for emergency comms. HEI is the quality defense/aerospace supplier that benefits from satellite part demand. PL and SPIR offer Earth observation data-as-a-service. LUNR (Intuitive Machines) has NASA lunar contracts but execution risk."
+  }
+];
+
+const TICKER_NAMES = {
+  AMD:'Advanced Micro Devices', AMPX:'Amprius Technologies', BABA:'Alibaba', BIDU:'Baidu',
+  BITF:'Bitfarms', CIFR:'Cipher Mining', CLSK:'CleanSpark', CORZ:'Core Scientific',
+  CRWV:'CoreWeave', EOSE:'Eos Energy', GOOGL:'Alphabet', HUT:'Hut 8 Mining',
+  IREN:'Iris Energy', LAES:'SEALSQ Corp', NBIS:'Nebius Group', NUAI:'NuScale Power',
+  NVDA:'NVIDIA', NVTS:'Navitas Semiconductor', PATH:'UiPath', POWL:'Powell Industries',
+  RR:'Rolls-Royce', SERV:'Serve Robotics', SNDK:'SanDisk', TE:'TRANE Technologies',
+  TSLA:'Tesla', TSM:'TSMC', WDC:'Western Digital', ZETA:'Zeta Global',
+  AMAT:'Applied Materials', LRCX:'Lam Research', MRAM:'Everspin Technologies',
+  MRVL:'Marvell Technology', MU:'Micron Technology', NTAP:'NetApp',
+  PSTG:'Pure Storage', RMBS:'Rambus', SIMO:'Silicon Motion', STX:'Seagate',
+  AMTM:'Ametek', AVAV:'AeroVironment', BWXT:'BWX Technologies', DPRO:'Draganfly',
+  ESLT:'Elbit Systems', KRKNF:'Kraken Robotics', KRMN:'Karman Holdings',
+  KTOS:'Kratos Defense', LPTH:'LightPath Technologies', MOB:'Mobilicom',
+  MRCY:'Mercury Systems', ONDS:'OnDefense', OSS:'One Stop Systems',
+  PLTR:'Palantir', PRZO:'ParaZero', RCAT:'Red Cat Holdings', TDY:'Teledyne',
+  UMAC:'Unusual Machines',
+  CRDO:'Credo Technology', IBRX:'ImmunityBio', IONQ:'IonQ', IONR:'Ion Resources',
+  LAC:'Lithium Americas', MP:'MP Materials', NAK:'Northern Dynasty', NET:'Cloudflare',
+  OPTT:'Ocean Power', PPTA:'Perpetua Resources', RZLT:'Rezolve AI', SKYT:'SkyWater Tech',
+  TMDX:'TransMedics', UAMY:'US Antimony', USAR:'US Array', UUUU:'Energy Fuels', WWR:'Westwater Resources',
+  ASTS:'AST SpaceMobile', BKSY:'BlackSky', FLY:'Fly Leasing', GSAT:'Globalstar',
+  HEI:'Heico', IRDM:'Iridium', KULR:'KULR Technology', LUNR:'Intuitive Machines',
+  MNTS:'Momentus', PL:'Planet Labs', RDW:'Redwire', RKLB:'Rocket Lab',
+  SATL:'Satellogic', SATS:'EchoStar', SIDU:'Sidus Space', SPIR:'Spire Global',
+  UFO:'Procure Space ETF', VOYG:'Voyager Digital', VSAT:'ViaSat',
+  SPY:'S&P 500 ETF', QQQ:'Nasdaq 100 ETF', IWM:'Russell 2000 ETF', VIX:'Volatility Index'
+};
+
+// ============================================================
+// STATE
+// ============================================================
+let allData = {};   // ticker -> { price, change, changePct, volume, high52, low52, mcap }
+let loading = true;
+let currentFilter = 'all';
+let currentSort = 'default';
+
+// ============================================================
+// CLOCK
+// ============================================================
+function updateClock() {
+  const now = new Date();
+  const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const h = String(et.getHours()).padStart(2,'0');
+  const m = String(et.getMinutes()).padStart(2,'0');
+  const s = String(et.getSeconds()).padStart(2,'0');
+  document.getElementById('clock').textContent = `${h}:${m}:${s} ET`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ============================================================
+// DATA FETCHING — calls our local Python server's /api/quotes
+// The server fetches Yahoo Finance server-side (no CORS issues)
+// ============================================================
+
+async function fetchAllData() {
+  document.getElementById('refresh-btn').textContent = '↻ LOADING...';
+  try {
+    const res = await fetch('/api/quotes');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+
+    // json.quotes is a map of symbol -> quote data
+    for (const [sym, q] of Object.entries(json.quotes)) {
+      allData[sym] = q;
+    }
+
+    loading = false;
+    renderAll();
+    updateMarketBar();
+
+    const ts = new Date(json.ts);
+    const cached = json.cached ? ' (cached)' : '';
+    document.getElementById('last-refresh').textContent =
+      `LAST REFRESH: ${ts.toLocaleTimeString()}${cached}`;
+    document.getElementById('footer-time').textContent =
+      `Updated ${ts.toLocaleString()} · ${json.count} tickers loaded`;
+
+  } catch(e) {
+    console.error('Failed to fetch quotes:', e);
+    document.getElementById('last-refresh').textContent = 'FETCH FAILED — is server.py running?';
+  }
+  document.getElementById('refresh-btn').textContent = '↺ REFRESH';
+}
+
+// ============================================================
+// MARKET BAR
+// ============================================================
+function updateMarketBar() {
+  const items = [
+    { sym: 'SPY', valId: 'spy-val', chgId: 'spy-chg' },
+    { sym: 'QQQ', valId: 'qqq-val', chgId: 'qqq-chg' },
+    { sym: 'IWM', valId: 'iwm-val', chgId: 'iwm-chg' },
+    { sym: 'VIX', valId: 'vix-val', chgId: 'vix-chg' },
+  ];
+  for (const item of items) {
+    const d = allData[item.sym];
+    if (!d) continue;
+    document.getElementById(item.valId).textContent = `$${d.price?.toFixed(2) ?? '--'}`;
+    const pct = d.changePct?.toFixed(2);
+    const el = document.getElementById(item.chgId);
+    if (pct !== undefined) {
+      el.textContent = `${pct > 0 ? '+' : ''}${pct}%`;
+      el.className = `market-val ${pct > 0 ? 'up' : pct < 0 ? 'down' : ''}`;
+    }
+  }
+}
+
+// ============================================================
+// INSIGHTS
+// ============================================================
+function renderInsights() {
+  const grid = document.getElementById('insights-grid');
+  grid.innerHTML = THEMES.map(theme => {
+    const tickers = theme.tickers;
+    const prices = tickers.map(t => allData[t]).filter(Boolean);
+    const gainers = prices.filter(d => d.changePct > 0).length;
+    const losers = prices.filter(d => d.changePct < 0).length;
+    const avgChg = prices.length ? (prices.reduce((a,b) => a + (b.changePct||0), 0) / prices.length) : 0;
+    const topMover = [...prices].sort((a,b) => Math.abs(b.changePct||0) - Math.abs(a.changePct||0))[0];
+    const topTicker = tickers[prices.indexOf(topMover)] || '';
+
+    const signal = avgChg > 1.5 ? 'HOT 🔥' : avgChg > 0.3 ? 'BULLISH' : avgChg < -1.5 ? 'SELLOFF' : avgChg < -0.3 ? 'WEAK' : 'NEUTRAL';
+    const signalClass = avgChg > 1.5 ? 'signal-hot' : avgChg > 0.3 ? 'signal-up' : avgChg < -0.3 ? 'signal-hot' : 'signal-neutral';
+
+    return `
+    <div class="insight-card ${theme.id}" onclick="scrollToTheme('${theme.id}')">
+      <div class="insight-theme">${theme.icon} ${theme.label}</div>
+      <div class="insight-title">
+        <span class="signal ${signalClass}">${signal}</span>
+        &nbsp; Avg ${avgChg >= 0 ? '+' : ''}${avgChg.toFixed(2)}%
+      </div>
+      <div class="insight-body">
+        ${gainers} up · ${losers} down · ${prices.length - gainers - losers} flat
+        ${topTicker ? ` · Top mover: <strong style="color:var(--text)">${topTicker}</strong> ${topMover?.changePct >= 0 ? '+' : ''}${topMover?.changePct?.toFixed(1)}%` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function scrollToTheme(id) {
+  const el = document.getElementById(`theme-${id}`);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ============================================================
+// SPARKLINE
+// ============================================================
+function makeSpark(changePct) {
+  // Generate a fake but directionally-consistent 10-point sparkline
+  const seed = changePct || 0;
+  const pts = [];
+  let v = 50;
+  for (let i = 0; i < 10; i++) {
+    v += (Math.random() - 0.5) * 8 + (seed * 0.3);
+    v = Math.max(10, Math.min(90, v));
+    pts.push(v);
+  }
+  // normalize
+  const mn = Math.min(...pts), mx = Math.max(...pts);
+  const norm = pts.map(p => mn === mx ? 50 : ((p - mn) / (mx - mn)) * 20 + 2);
+  const coords = norm.map((y, i) => `${(i / 9) * 70 + 1},${22 - y}`).join(' ');
+  const color = changePct > 0 ? '#10b981' : changePct < 0 ? '#ef4444' : '#4a5568';
+  return `<svg class="sparkline" viewBox="0 0 72 24" preserveAspectRatio="none"><polyline points="${coords}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+// ============================================================
+// FORMAT HELPERS
+// ============================================================
+function fmtPrice(v) {
+  if (v == null) return '<span class="loading-shimmer" style="width:40px;height:12px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>';
+  return `$${v.toFixed(2)}`;
+}
+
+function fmtChange(pct) {
+  if (pct == null) return '--';
+  const sign = pct > 0 ? '+' : '';
+  const cls = pct > 0 ? 'up' : pct < 0 ? 'down' : '';
+  return `<span class="${cls}">${sign}${pct.toFixed(2)}%</span>`;
+}
+
+function fmtVol(v) {
+  if (!v) return '--';
+  if (v >= 1e9) return (v/1e9).toFixed(1) + 'B';
+  if (v >= 1e6) return (v/1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return (v/1e3).toFixed(0) + 'K';
+  return v;
+}
+
+function signalFor(pct) {
+  if (pct == null) return '';
+  if (pct > 5) return '<span class="signal signal-hot">SURGE</span>';
+  if (pct > 2) return '<span class="signal signal-up">MOVE</span>';
+  if (pct < -5) return '<span class="signal signal-hot">DROP</span>';
+  if (pct < -2) return '<span class="signal signal-watch">WEAK</span>';
+  return '';
+}
+
+// ============================================================
+// RENDER THEMES
+// ============================================================
+function renderThemes() {
+  const grid = document.getElementById('themes-grid');
+
+  const filteredThemes = currentFilter === 'all'
+    ? THEMES
+    : THEMES.filter(t => t.id === currentFilter);
+
+  grid.innerHTML = filteredThemes.map(theme => {
+    let tickers = [...theme.tickers];
+
+    if (currentSort === 'change-desc') {
+      tickers.sort((a, b) => (allData[b]?.changePct || 0) - (allData[a]?.changePct || 0));
+    } else if (currentSort === 'change-asc') {
+      tickers.sort((a, b) => (allData[a]?.changePct || 0) - (allData[b]?.changePct || 0));
+    } else if (currentSort === 'volume') {
+      tickers.sort((a, b) => (allData[b]?.volume || 0) - (allData[a]?.volume || 0));
+    }
+
+    const rows = tickers.map(sym => {
+      const d = allData[sym] || {};
+      return `
+      <tr onclick="openModal('${sym}')" style="cursor:pointer;">
+        <td>
+          <div class="ticker-sym">${sym}</div>
+          <div class="ticker-name">${TICKER_NAMES[sym] || ''}</div>
+        </td>
+        <td class="price-cell">${fmtPrice(d.price)}</td>
+        <td class="change-cell">${fmtChange(d.changePct)}</td>
+        <td class="vol-cell">${fmtVol(d.volume)}</td>
+        <td class="spark-cell">${d.changePct != null ? makeSpark(d.changePct) : ''}</td>
+        <td>${signalFor(d.changePct)}</td>
+      </tr>`;
+    }).join('');
+
+    const prices = tickers.map(t => allData[t]).filter(Boolean);
+    const avgChg = prices.length ? (prices.reduce((a,b) => a + (b.changePct||0), 0) / prices.length) : 0;
+
+    return `
+    <div class="theme-block ${theme.id}" id="theme-${theme.id}">
+      <div class="theme-header">
+        <div class="theme-title">
+          ${theme.icon} ${theme.label}
+          <span class="theme-badge">${tickers.length} TICKERS</span>
+        </div>
+        <div class="theme-stats">
+          <div>AVG <span class="stat-val ${avgChg >= 0 ? 'up' : 'down'}">${avgChg >= 0 ? '+' : ''}${avgChg.toFixed(2)}%</span></div>
+        </div>
+      </div>
+      <table class="ticker-table">
+        <thead>
+          <tr>
+            <th>TICKER</th>
+            <th>PRICE</th>
+            <th>CHG %</th>
+            <th>VOLUME</th>
+            <th>7D TREND</th>
+            <th>SIGNAL</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// RENDER ALL
+// ============================================================
+function renderAll() {
+  renderInsights();
+  renderThemes();
+}
+
+// ============================================================
+// FILTER / SORT
+// ============================================================
+function filterTheme(id, btn) {
+  currentFilter = id;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderThemes();
+}
+
+function sortTickers(val) {
+  currentSort = val;
+  renderThemes();
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+function openModal(sym) {
+  const d = allData[sym] || {};
+  document.getElementById('m-ticker').textContent = sym;
+  document.getElementById('m-name').textContent = TICKER_NAMES[sym] || d.name || '';
+  document.getElementById('m-price').textContent = d.price ? `$${d.price.toFixed(2)}` : '--';
+
+  const pct = d.changePct?.toFixed(2);
+  const chgEl = document.getElementById('m-change');
+  chgEl.textContent = pct != null ? `${pct > 0 ? '+' : ''}${pct}% today` : '--';
+  chgEl.className = `modal-change ${pct > 0 ? 'up' : pct < 0 ? 'down' : ''}`;
+
+  document.getElementById('m-high').textContent = d.high52 ? `$${d.high52.toFixed(2)}` : '--';
+  document.getElementById('m-low').textContent = d.low52 ? `$${d.low52.toFixed(2)}` : '--';
+  document.getElementById('m-vol').textContent = fmtVol(d.volume);
+  document.getElementById('m-cap').textContent = d.mcap ? `$${fmtVol(d.mcap)}` : '--';
+
+  const theme = THEMES.find(t => t.tickers.includes(sym));
+  const insightEl = document.getElementById('m-insight');
+  insightEl.textContent = 'Fetching AI insight...';
+
+  document.getElementById('modal').classList.add('open');
+
+  // Get AI insight via Claude API
+  getTickerInsight(sym, d, theme, insightEl);
+}
+
+async function getTickerInsight(sym, data, theme, el) {
+  try {
+    const prompt = `You are a concise stock market analyst. In 2-3 sentences, give a sharp, specific insight about ${sym} (${TICKER_NAMES[sym] || sym}) in the context of the "${theme?.label || 'investment'}" theme. Current price: $${data.price?.toFixed(2) || 'unknown'}. Today's change: ${data.changePct?.toFixed(2) || 'unknown'}%. Focus on what traders should know RIGHT NOW. Be direct, no disclaimers.`;
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const json = await res.json();
+    const text = json.content?.map(c => c.text || '').join('') || 'No insight available.';
+    el.textContent = text;
+  } catch(e) {
+    el.textContent = 'Insight unavailable. Check connection.';
+  }
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+
+// ============================================================
+// REFRESH
+// ============================================================
+function refreshAll() {
+  fetchAllData();
+}
+
+// Initial render with shimmer state
+function renderShimmer() {
+  const grid = document.getElementById('themes-grid');
+  grid.innerHTML = THEMES.map(theme => `
+    <div class="theme-block ${theme.id}">
+      <div class="theme-header">
+        <div class="theme-title">${theme.icon} ${theme.label} <span class="theme-badge">${theme.tickers.length} TICKERS</span></div>
+      </div>
+      <table class="ticker-table">
+        <thead><tr><th>TICKER</th><th>PRICE</th><th>CHG %</th><th>VOLUME</th><th>TREND</th><th>SIGNAL</th></tr></thead>
+        <tbody>
+          ${theme.tickers.slice(0,5).map(sym => `
+          <tr>
+            <td><div class="ticker-sym">${sym}</div><div class="ticker-name">${TICKER_NAMES[sym] || ''}</div></td>
+            <td class="price-cell"><span class="loading-shimmer" style="width:50px;height:11px;display:inline-block">&nbsp;</span></td>
+            <td><span class="loading-shimmer" style="width:40px;height:11px;display:inline-block">&nbsp;</span></td>
+            <td><span class="loading-shimmer" style="width:35px;height:11px;display:inline-block">&nbsp;</span></td>
+            <td></td><td></td>
+          </tr>`).join('')}
+          <tr><td colspan="6" style="color:var(--muted);font-size:10px;text-align:center;padding:8px">Loading ${theme.tickers.length} tickers...</td></tr>
+        </tbody>
+      </table>
+    </div>`).join('');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+renderShimmer();
+fetchAllData();
+// Auto-refresh every 5 minutes
+setInterval(fetchAllData, 5 * 60 * 1000);
+</script>
+</body>
+</html>
