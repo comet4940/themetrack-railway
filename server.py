@@ -1,7 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 ThemeTrack server — Finnhub edition.
-Usage: python3 server.py
+Usage: python server.py
 Then open: http://localhost:8080
 """
 
